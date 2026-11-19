@@ -1,8 +1,9 @@
 
 # Deploy de exemplo: PostgreSQL + migrations do Prisma + API NestJS.
 #
-# Uso, na raiz do projeto:
-# docker compose --env-file docker.env up -d --build
+# Uso (docker.env é criado a partir de docker.env.example):
+#   docker compose --env-file docker.env up -d
+# As imagens vêm do GHCR. Para gerá-las, veja o compose.build.yaml.
 
 name: nest-prisma
 
@@ -23,10 +24,7 @@ services:
       retries: 10
 
   migrate:
-    build:
-      context: .
-      target: migrator
-    image: nest-prisma-migrator
+    image: ${IMAGE_PREFIX:?}/nest-prisma-migrator:${IMAGE_TAG:?}
     environment:
       DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public"
     depends_on:
@@ -35,8 +33,9 @@ services:
     restart: "no"
 
   # Opcional: popula o banco com os 10 produtos de exemplo.
+  #   docker compose --env-file docker.env run --rm seed
   seed:
-    image: nest-prisma-migrator
+    image: ${IMAGE_PREFIX:?}/nest-prisma-migrator:${IMAGE_TAG:?}
     profiles: ["seed"]
     environment:
       DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public"
@@ -47,9 +46,7 @@ services:
     restart: "no"
 
   app:
-    build:
-      context: .
-      target: runtime
+    image: ${IMAGE_PREFIX:?}/nest-prisma-app:${IMAGE_TAG:?}
     restart: unless-stopped
     environment:
       DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public"
